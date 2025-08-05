@@ -1,4 +1,4 @@
-GymFit
+#GymFit#
 GymFit is a Blazor web application designed to help users manage their gym memberships.
 
 Getting Started
