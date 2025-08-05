@@ -1,4 +1,4 @@
-# GymFit#
+# GymFit
 GymFit is a Blazor web application designed to help users manage their gym memberships.
 
 # Getting Started
@@ -17,6 +17,10 @@ Open your web browser and navigate to https://localhost:<port> (or the address s
 
 # Prerequisites
 .NET 9.0 or later
+
+
 Visual Studio or preferred IDE
+
 Git
+
 MySQL
