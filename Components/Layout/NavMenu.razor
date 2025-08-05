@@ -1,0 +1,161 @@
+﻿@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+@inject gymappyt.Services.AuthService AuthService;
+
+<nav class="bg-transparent absolute w-full z-20 py-8 px-16">
+    <div class="w-full flex justify-between items-center">
+        <NavLink class="flex items-center text-white text-2xl font-bold hover:text-app-green transition-colors" href="/"
+            Match="NavLinkMatch.All">
+            <i class="fas fa-dumbbell mr-3 text-white"></i>GymFit
+        </NavLink>
+        <ul class="hidden lg:flex text-white items-center space-x-8">
+            <li>
+                <NavLink class="hover:text-app-green transition-colors duration-300" href="/" Match="NavLinkMatch.All">
+                    Home</NavLink>
+            </li>
+            <li>
+                <NavLink class="hover:text-app-green transition-colors duration-300" href="/classes">
+                    Classes</NavLink>
+            </li>
+            <li>
+                <NavLink class="hover:text-app-green transition-colors duration-300" href="/booking">
+                    Book Class</NavLink>
+            </li>
+            @if (AuthService.IsLoggedIn)
+            {
+                <li>
+                    <NavLink class="hover:text-lime-300 transition-colors duration-200" href="/profile">Profile</NavLink>
+                </li>
+                <li>
+                    <button type="submit" class="hover:text-lime-300 transition-colors duration-200" href="/profile"
+                        @onclick="Logout">
+                        Logout</button>
+                </li>
+               <li>
+                    <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-app-green text-white font-bold text-lg uppercase leading-none text-center">@UserInitials</span>
+                </li>                
+            }
+            else
+            {
+                <li>
+                    <NavLink class="hover:text-app-green transition-colors duration-300" href="/login">
+                        Login</NavLink>
+                </li>
+            }
+
+            @if (!AuthService.IsLoggedIn)
+            {
+                <li>
+                    <NavLink class="bg-app-green font-bold rounded-full px-4 py-2 shadow-app-green hover:bg-green-600 transition-colors duration-300" href="/join">
+                        Join Now</NavLink>
+                </li>
+            }
+        </ul>
+        
+        <button class="lg:hidden text-app-green focus:outline-none focus:text-app-green cursor-pointer" type="button"
+            aria-label="Toggle navigation button" @onclick="ToggleMenu">
+            <i class="fas fa-bars text-2xl ml-3"></i>
+        </button>
+
+
+        @if (isMenuOpen)
+        {
+            <div class="fixed inset-0 z-50 flex lg:hidden">
+                <div class="fixed inset-0 bg-black/90 transition-opacity duration-300" @onclick="ToggleMenu"></div>
+            </div>
+
+            <aside
+                class="fixed left-0 h-full top-0 w-64 bg-app-gray text-white shadow-app-green z-50 transition-transform duration-300 transform translate-x-0 lg:translate-x-0">
+                <button
+                    class="absolute top-4 right-4 text-white text-2xl focus:outline-none cursor-pointer hover:bg-app-green p-4"
+                    @onclick="ToggleMenu" aria-label="Close menu">
+                    <i class="fas fa-times"></i>
+                </button>
+                <ul class="flex flex-col space-y-6 p-8 pt-32 text-white">
+                    @if (AuthService.IsLoggedIn)
+                    {
+                        <li>
+                            <span
+                                class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-app-green text-white font-bold text-lg uppercase leading-none text-center">@UserInitials</span>
+                        </li>
+                    }
+
+                    <li>
+                        <NavLink class="hover:text-lime-300 transition-colors duration-200" href="/"
+                            Match="NavLinkMatch.All" @onclick="ToggleMenu">Home</NavLink>
+                    </li>
+                    <li>
+                        <NavLink class="hover:text-lime-300 transition-colors duration-200" href="/classes"
+                            @onclick="ToggleMenu">Classes</NavLink>
+                    </li>
+                    <li>
+                        <NavLink class="hover:text-lime-300 transition-colors duration-200" href="/booking"
+                            @onclick="ToggleMenu">Book Class</NavLink>
+                    </li>
+                    @if (AuthService.IsLoggedIn)
+                    {
+                        <li>
+                            <NavLink class="hover:text-lime-300 transition-colors duration-200" href="/profile"
+                                @onclick="ToggleMenu">
+                                Profile</NavLink>
+                        </li>
+                        <li>
+                            <button type="submit" class="hover:text-lime-300 transition-colors duration-200" href="/profile"
+                                @onclick="Logout">
+                                Logout</button>
+                        </li>
+                    }
+                    else
+                    {
+                        <li>
+                            <NavLink class="hover:text-lime-300 transition-colors duration-200" href="/login"
+                                @onclick="ToggleMenu">
+                                Login</NavLink>
+                        </li>
+                        <li>
+                                <NavLink
+                                    class="bg-app-green font-bold rounded-full px-4 py-2 shadow-app-green hover:bg-green-600 cursor-pointer transition-colors duration-200"
+                                    href="/join" @onclick="ToggleMenu">
+                                    Join Now
+                                </NavLink>
+                            </li>                        
+                    }
+                 
+                </ul>
+            </aside>
+        }
+
+
+    </div>
+</nav>
+
+
+@code {
+    private bool isMenuOpen = false;
+    private string? userName;
+    private string? UserInitials;
+    protected override async Task OnInitializedAsync() {
+        if (AuthService.IsLoggedIn)
+        {
+            var user = await AuthService.GetCurrentUserAsync();
+
+            userName = user != null ? $"{user.FirstName} {user.LastName}" : null;
+            Console.WriteLine(userName);
+            UserInitials = new string(userName?.Split(' ').Select(s => s[0]).ToArray() ?? Array.Empty<char>());
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        NavigationManager.NavigateTo("/");
+    }
+    
+    private void ToggleMenu()
+    {
+        Console.WriteLine("toggle menu");
+        isMenuOpen = !isMenuOpen;
+    }
+
+
+}

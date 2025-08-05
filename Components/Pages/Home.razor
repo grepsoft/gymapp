@@ -1,0 +1,30 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<!-- #region  hero secion-->
+<section class="relative py-20 md:py-32 text-white bg-cover bg-center bg-no-repeat" style="background-image: url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')">
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-green-900/60 to-black/80"></div>
+    <div class="container mx-auto px-4 relative z-10">
+        <div class="text-center animate-fade-in-up">
+            <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">Transform Your Body</h1>
+            <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed">Join FitLife Gym and discover the strongest version of yourself. State-of-the-art equipment, expert trainers, and a community that motivates you every day.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="/join" class="hover:bg-app-green text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">Start Your Journey</a>
+                <a href="/classes" class="bg-transparent border-2 border-app-green hover:bg-app-gray hover:text-app-green text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">View Exercises</a>                
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- #region  features-->
+<Features />
+
+<!-- #region  stats-->
+<Stats />
+
+<!-- #region  membership plans-->
+<MembershipPlans />
+
+<!-- #region Cta -->
+<Cta />

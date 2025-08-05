@@ -1,0 +1,91 @@
+@page "/join"
+@using gymappyt.Models;
+@inject NavigationManager NavigationManager;
+@inject gymappyt.Services.UserService UserService;
+
+<PageTitle>Join Us</PageTitle>
+
+<div class="flex items-center justify-center py-16 min-h-[70vh]">
+    <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-4xl font-bold mb-6 text-center">Join Us</h1>
+        <p class="mb-6 text-center">Become a member today and start your fitness journey</p>
+        <EditForm Model="Model" OnValidSubmit="Submit" FormName="JoinForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="FirstName">First Name</label>
+                <InputText id="FirstName" class="w-full p-2 border rounded" @bind-Value="Model.FirstName" />
+                <ValidationMessage For="@(() => Model.FirstName)" class="text-red-500"/>
+            </div>
+            <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="LastName">Last Name</label>
+                <InputText id="LastName" class="w-full p-2 border rounded" @bind-Value="Model.LastName" />
+                <ValidationMessage For="@(() => Model.LastName)" class="text-red-500"/>
+            </div>
+            <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="Email">Email</label>
+                <InputText id="Email" class="w-full p-2 border rounded" @bind-Value="Model.Email" />
+                <ValidationMessage For="@(() => Model.Email)" class="text-red-500"/>
+            </div>     
+            <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="Phone">Phone</label>
+                <InputText id="Phone" class="w-full p-2 border rounded" @bind-Value="Model.phone" />
+                <ValidationMessage For="@(() => Model.phone)" class="text-red-500"/>
+            </div>   
+            <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="password">Password</label>
+                <InputText id="password" type="password" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-app-green" @bind-Value="Model.password" />
+                <ValidationMessage For="@(() => Model.password)" class="text-red-500" />
+            </div>
+            <div class="mb-6">
+                <label class="block mb-1 font-semibold" for="confirmPassword">Confirm Password</label>
+                <InputText id="confirmPassword" type="password" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-app-green" @bind-Value="Model.ConfirmPassword" />
+                <ValidationMessage For="@(() => Model.ConfirmPassword)" class="text-red-500" />
+            </div>       
+            <div class="mb-4 flex items-center">
+                <InputCheckbox id="terms" class="mr-2" @bind-Value="Model.AcceptTerms" />
+                <label for="terms" class="text-sm">I accept the <a href="#" class="text-app-green underline">terms and conditions</a></label>
+                <ValidationMessage For="@(() => Model.AcceptTerms)" class="text-red-500"/>
+            </div>  
+            <div class="mb-6 flex items-center">
+                <InputCheckbox id="terms" class="mr-2" @bind-Value="Model.SubscribeMarketing" />
+                <label for="marketing" class="text-sm">Subscribe to marketing emails</label>                
+            </div>                       
+            <button type="submit" class="w-full bg-app-green py-2 font-bold text-white" >Save</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+
+    [SupplyParameterFromForm]    
+    private UserModel? Model {get; set;}
+
+    private bool IsSubmitting = false;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new UserModel();
+    }
+
+    private async Task Submit() 
+    {
+        IsSubmitting = true;
+
+        try {
+
+            if (await UserService.UserExistsAsync(Model.Email)) {
+                throw new Exception("User already exists with this email.");
+            }
+
+            await UserService.AddUserAsync(Model);
+        } catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+        } finally {
+            IsSubmitting = false;
+        }
+
+        NavigationManager.NavigateTo("/login", true);
+    }
+}
+

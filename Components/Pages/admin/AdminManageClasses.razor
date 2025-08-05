@@ -1,0 +1,219 @@
+@page "/admin/manage-classes"
+@rendermode InteractiveServer
+@using gymappyt.Models
+@using gymappyt.Services
+@inject GymClassService GymClassService
+@inject InstructorService InstructorService
+
+<PageTitle>Manage Classes</PageTitle>
+
+<div class="max-w-4xl mx-auto py-8">
+    <h2 class="text-2xl font-bold mb-6">Manage Classes</h2>
+
+    <!-- Add/Edit Class Form -->
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">@((editMode ? "Edit" : "Add") + " Class")</h3>
+        <EditForm Model="classModel" OnValidSubmit="HandleValidSubmit" FormName="classForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Name</label>
+                    <InputText class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.Name" />
+                    <ValidationMessage For="@(() => classModel.Name)" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Type</label>
+                    <InputSelect class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.Type">
+                        @foreach (ClassType type in Enum.GetValues(typeof(ClassType)))
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Level</label>
+                    <InputSelect class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.Level">
+                        @foreach (DifficultyLevel level in Enum.GetValues(typeof(DifficultyLevel)))
+                        {
+                            <option value="@level">@level</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Membership</label>
+                    <InputSelect class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.Membership">
+                        @foreach (MembershipType membership in Enum.GetValues(typeof(MembershipType)))
+                        {
+                            <option value="@membership">@membership</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Instructor</label>
+                    <InputSelect class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.InstructorId">
+                        <option value="">Select Instructor</option>
+                        @foreach (var instructor in instructors)
+                        {
+                            <option value="@instructor.Id">@instructor.FullName</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Start Time</label>
+                    <InputDate class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.StartTime" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">End Time</label>
+                    <InputDate class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.EndTime" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Max Capacity</label>
+                    <InputNumber class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.MaxCapacity" />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-1">Description</label>
+                    <InputTextArea class="input input-bordered w-full p-2 border rounded" @bind-Value="classModel.Description" />
+                </div>
+            </div>
+            <div class="flex items-center gap-4 mt-6">
+                <button type="submit" class="btn btn-primary px-6 py-2 rounded text-white bg-blue-600 hover:bg-blue-700">
+                    @(editMode ? "Update" : "Add")
+                </button>
+                @if (editMode)
+                {
+                    <button type="button" class="btn btn-secondary px-6 py-2 rounded text-gray-700 bg-gray-200 hover:bg-gray-300" @onclick="CancelEdit">
+                        Cancel
+                    </button>
+                }
+            </div>
+        </EditForm>
+    </div>
+
+    <!-- Classes Table -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Classes List</h3>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Instructor</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">End</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Capacity</th>
+                    <th class="px-4 py-2"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @if (classes is not null && classes.Count > 0)
+                {
+                    @foreach (var gymClass in classes)
+                    {
+                        <tr>
+                            <td class="px-4 py-2">@gymClass.Name</td>
+                            <td class="px-4 py-2">@gymClass.TypeDisplayName</td>
+                            <td class="px-4 py-2">@gymClass.LevelDisplayName</td>
+                            <td class="px-4 py-2">@gymClass.Instructor?.FullName</td>
+                            <td class="px-4 py-2">@gymClass.StartTime.ToString("g")</td>
+                            <td class="px-4 py-2">@gymClass.EndTime.ToString("g")</td>
+                            <td class="px-4 py-2">@gymClass.MaxCapacity</td>
+                            <td class="px-4 py-2 flex gap-2">
+                                <button class="btn btn-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200 rounded px-3 py-1" @onclick="() => EditClass(gymClass)">
+                                    Edit
+                                </button>
+                                <button class="btn btn-sm bg-red-100 text-red-800 hover:bg-red-200 rounded px-3 py-1" @onclick="() => DeleteClass(gymClass)">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="px-4 py-4 text-center text-gray-500">No classes found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<GymClassModel> classes = new();
+    private List<InstructorModel> instructors = new();
+    [SupplyParameterFromForm]
+    private GymClassModel classModel { get; set; } = new();
+    private bool editMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInstructors();
+        await LoadClasses();
+    }
+
+    private async Task LoadInstructors()
+    {
+        instructors = await InstructorService.GetInstructorsAsync();
+    }
+
+    private async Task LoadClasses()
+    {
+        // Include Instructor navigation property
+        classes = await GymClassService.GetClassesAsync(includeInstructor: true);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        bool result;
+        if (editMode)
+        {
+            result = await GymClassService.UpdateClassAsync(classModel);
+        }
+        else
+        {
+            result = await GymClassService.AddClassAsync(classModel);
+        }
+
+        if (result)
+        {
+            await LoadClasses();
+            classModel = new GymClassModel();
+            editMode = false;
+        }
+    }
+
+    private void EditClass(GymClassModel gymClass)
+    {
+        classModel = new GymClassModel
+        {
+            Id = gymClass.Id,
+            Name = gymClass.Name,
+            Description = gymClass.Description,
+            Type = gymClass.Type,
+            Level = gymClass.Level,
+            Membership = gymClass.Membership,
+            InstructorId = gymClass.InstructorId,
+            StartTime = gymClass.StartTime,
+            EndTime = gymClass.EndTime,
+            MaxCapacity = gymClass.MaxCapacity,
+            IsActive = gymClass.IsActive
+        };
+        editMode = true;
+    }
+
+    private void CancelEdit()
+    {
+        classModel = new GymClassModel();
+        editMode = false;
+    }
+
+    private async Task DeleteClass(GymClassModel gymClass)
+    {
+        await GymClassService.DeleteClassAsync(gymClass);
+        await LoadClasses();
+    }
+}

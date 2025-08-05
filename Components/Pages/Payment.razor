@@ -1,0 +1,117 @@
+@page "/payment/{plan}";
+@inject gymappyt.Services.FakePaymentService FakePaymentService;
+@inject gymappyt.Services.AuthService AuthService;
+@inject gymappyt.Services.UserService UserService;
+@inject NavigationManager NavigationManager;
+@using System.ComponentModel.DataAnnotations
+@using gymappyt.Models;
+
+<PageTitle>Payment</PageTitle>
+
+@if (!AuthService.IsLoggedIn)
+{
+    <div class="text-center text-red-600 mt-10">You must be logged in to purchase a membership plan.</div>
+}
+else
+{
+    <div class="flex items-center justify-center min-h-[70vh] py-16">
+        <div class="max-w-md mx-auto mt-10 bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold mb-4 text-center">Pay for @planDisplay</h2>
+            <EditForm Model="Model" OnValidSubmit="HandlePayment" FormName="PaymentForm">
+                <DataAnnotationsValidator />
+                <div class="mb-4">
+                    <label class="block mb-1 font-semibold">Cardholder Name</label>
+                    <InputText class="w-full border rounded px-3 py-2" @bind-Value="Model.Name" />
+                    <ValidationMessage For="@(() => Model.Name)" class="text-red-600" />
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-1 font-semibold">Card Number</label>
+                    <InputText class="w-full border rounded px-3 py-2" @bind-Value="Model.CardNumber" />
+                    <ValidationMessage For="@(() => Model.CardNumber)" class="text-red-600" />
+                </div>
+                <div class="mb-4 flex space-x-4">
+                    <div class="flex-1">
+                        <label class="block mb-1 font-semibold">Expiry</label>
+                        <InputText class="w-full border rounded px-3 py-2" @bind-Value="Model.Exp"
+                            placeholder="MM/YY" />
+                        <ValidationMessage For="@(() => Model.Exp)" class="text-red-600" />
+                    </div>
+                    <div class="flex-1">
+                        <label class="block mb-1 font-semibold">CVV</label>
+                        <InputText class="w-full border rounded px-3 py-2" @bind-Value="Model.Cvv" />
+                        <ValidationMessage For="@(() => Model.Cvv)" class="text-red-600" />
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-app-green text-white font-bold py-2 px-4 rounded hover:bg-green-600 transition-colors duration-200"
+                    disabled="@isProcessing">
+                    @(isProcessing ? "Processing..." : $"Pay for {planDisplay}")
+                </button>
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="mt-4 text-green-600 font-semibold text-center">@successMessage</div>
+                }
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="mt-4 text-red-600 font-semibold text-center">@errorMessage</div>
+                }
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+
+    [Parameter] public string plan { get; set; }
+
+    private MembershipType? PlanEnum => Enum.TryParse<MembershipType>(plan, true, out var val) ? val :
+    (MembershipType?)null;
+
+    private string planDisplay => PlanEnum?.ToString() ?? "Membership";
+
+    [SupplyParameterFromForm]
+    private PaymentModel Model { get; set; } = new();
+
+    private bool isProcessing = false;
+    private string? successMessage;
+    private string? errorMessage;
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.IsLoggedIn) {
+            NavigationManager.NavigateTo("/login?returnUrl=/payment/" + plan, true);
+        }
+    }
+
+    private async Task HandlePayment() {
+        var user = await AuthService.GetCurrentUserAsync();
+        successMessage = null;
+
+        if (user == null) {
+            throw new InvalidOperationException("User is not logged in.");
+        }
+
+        var result = await FakePaymentService.ProcessPaymentAsync(Model.CardNumber, Model.Exp, Model.Cvv, Model.Name, 0);
+
+        if (result) {
+            if (PlanEnum.HasValue) {
+                user.MembershipPlan = PlanEnum.Value;
+                await UserService.UpdateUserMembershipAsync(user.Id, user.MembershipPlan);
+                successMessage = $"Payment successful! Your membership plan has been updated to {planDisplay}.";
+            }
+        } else {
+            errorMessage = "Payment failed. Please check your card details and try again.";
+        }
+
+        isProcessing = false;
+
+    }
+
+    public class PaymentModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string CardNumber { get; set; } = string.Empty;
+        public string Exp { get; set; } = string.Empty;
+        public string Cvv { get; set; } = string.Empty;
+    }
+}
+

@@ -1,0 +1,305 @@
+@page "/classes"
+@using gymappyt.Models;
+@inject NavigationManager Navigation
+@inject gymappyt.Services.GymClassService GymClassService;
+@inject gymappyt.Services.AuthService AuthService;
+@inject gymappyt.Services.BookingService BookingService;
+@rendermode InteractiveServer
+
+<PageTitle>Classes</PageTitle>
+
+<section class="bg-gradient-to-r from-gym-blue to-gym-orange text-white py-16">
+    <div class="container mx-auto px-4 text-center">
+        <h1 class="text-5xl font-bold mb-4">Book Your Classes</h1>
+        <p class="text-xl opacity-90 max-w-2xl mx-auto">Reserve your spot in our expert-led fitness classes and take
+            your fitness journey to the next level</p>
+    </div>
+
+</section>
+
+<section class="py-12 bg-gray-100">
+    <div class="container mx-auto px-4">
+        <!-- Filter Bar -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Class Type</label>
+                    <select @onchange="OnTypeFilterChanged"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2">
+                        <option value="">All Types</option>
+                        @foreach (var type in Enum.GetValues<ClassType>())
+                        {
+                            <option value="@type" selected="@(TypeQuery == type.ToString())">@type</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                    <select @onchange="OnLevelFilterChanged"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gym-orange focus:border-gym-orange">
+                        <option value="">All Levels</option>
+                        @foreach (var level in Enum.GetValues<DifficultyLevel>())
+                        {
+                            <option value="@level" selected="@(LevelQuery == level.ToString())">@level</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                    <input type="date" @onchange="OnDateFilterChanged" value="@DateQuery"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gym-orange focus:border-gym-orange">
+                </div>
+                <div class="flex items-end">
+                    <button @onclick="ClearFilters"
+                        class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+<!-- Classes Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="classesContainer">
+            @foreach (var gymClass in filteredClasses)
+            {
+<div class="class-card bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden" 
+                     data-type="@gymClass.TypeDisplayName" 
+                     data-level="@gymClass.LevelDisplayName" 
+                     data-date="@gymClass.StartTime.ToString("yyyy-MM-dd")">
+                    
+                    <!-- Class Header -->
+                    <div class="bg-gradient-to-r from-app-green to-app-gray p-6 text-white">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <i class="@gymClass.GetIcon() text-2xl"></i>
+                                <h3 class="text-xl font-bold uppercase">@gymClass.Name</h3>
+                            </div>
+                            <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-medium shadow-app-green border border-app-green">
+                                @gymClass.TypeDisplayName
+                            </span>
+                        </div>
+                        <p class="text-sm opacity-90 capitalize">with @gymClass.Instructor.FullName</p>
+                    </div>
+
+                    <!-- Class Details -->
+                    <div class="p-6">
+                        <p class="text-gray-600 mb-4">@gymClass.Description</p>
+                        
+                        <!-- Class Info -->
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-calendar-alt w-5 text-gym-orange mr-3"></i>
+                                <span>@gymClass.StartTime.ToString("dddd, MMMM dd, yyyy")</span>
+                            </div>
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-clock w-5 text-gym-orange mr-3"></i>
+                                <span>@gymClass.StartTime.ToString("h:mm tt") - @gymClass.EndTime.ToString("h:mm tt")</span>
+                            </div>
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-stopwatch w-5 text-gym-orange mr-3"></i>
+                                <span>@((int)gymClass.Duration.TotalMinutes) minutes</span>
+                            </div>
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-signal w-5 text-gym-orange mr-3"></i>
+                                <span class="px-2 py-1 rounded-full text-xs font-medium @gymClass.GetLevelColor()">
+                                    @gymClass.LevelDisplayName
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Capacity Bar -->
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                <span>Capacity</span>
+                                <span>@gymClass.CurrentBookings / @gymClass.MaxCapacity</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-gradient-to-r from-app-green to-app-gray h-3 rounded-full transition-all duration-300" 
+                                     style="width: @(((double)gymClass.CurrentBookings / gymClass.MaxCapacity) * 100)%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>@gymClass.AvailableSpots spots available</span>
+                                @if (gymClass.IsFull)
+                                {
+                                    <span class="text-red-500 font-medium">Class Full</span>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Booking Button -->
+                        @if (gymClass.IsFull)
+                        {
+                            <button type="button" disabled class="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold cursor-not-allowed">
+                                <i class="fas fa-times mr-2"></i>Class Full
+                            </button>
+                        }
+                        else if (gymClass.StartTime <= DateTime.UtcNow)
+                        {
+                            <button type="button" disabled class="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold cursor-not-allowed">
+                                <i class="fas fa-clock mr-2"></i>Class Started
+                            </button>
+                        }
+                        else
+                        {
+                            @if (AuthService.IsLoggedIn)
+                            {
+                                <button @onclick="() => OnBookClass(gymClass)" type="button" class="w-full bg-app-green text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300">
+                                    <i class="fas fa-calendar-plus mr-2"></i>Book Class
+                                </button>
+                            }
+                            else
+                            {
+                                <p class="text-center text-gray-600"><a href="/login" class="text-app-green underline hover:text-green-600">Login</a> Or <a href="/join" class="text-app-green underline hover:text-green-600">Join Now</a> to book classes</p>
+                            }
+                        }
+                    </div>
+                </div>                
+                }
+        </div>  
+
+        @if (filteredClasses.Count == 0)
+        {
+            <!-- No Classes Message -->
+            <div id="noClassesMessage" class="text-center py-12">
+                <div class="max-w-md mx-auto">
+                    <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No Classes Found</h3>
+                    <p class="text-gray-500">Try adjusting your filters to see more classes.</p>
+                </div>
+            </div> 
+        }   
+             
+    </div>
+</section>
+
+@if (message != null)
+{
+    <div class="fixed top-4 right-4 z-50">
+        <div class="@(bookingSuccess ? "bg-green-500" : "bg-red-500") text-white px-6 py-4 rounded-lg shadow-lg">
+            <div class="flex items-center">
+                <i class="fas @(bookingSuccess ? "fa-check-circle" : "fa-exclamation-circle") mr-2"></i>
+                <span>@message</span>
+            </div>
+        </div>
+    </div>
+}
+
+@code
+{
+    private List<GymClassModel> upcomingClasses = new();
+    private List<GymClassModel> filteredClasses = new();
+    private string? message;
+    private bool bookingSuccess;
+
+    [Parameter, SupplyParameterFromQuery(Name = "type")]
+    public string? TypeQuery { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "level")]
+    public string? LevelQuery { get; set; }
+
+    [Parameter, SupplyParameterFromQuery(Name = "date")]
+    public string? DateQuery { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClasses();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadClasses();
+        ApplyQueryFilters();
+    }    
+    private async Task LoadClasses()
+    {
+        var allClasses = await GymClassService.GetClassesAsync(true);
+
+        upcomingClasses = allClasses
+        .Where(c => c.StartTime > DateTime.Now && c.IsActive)
+        .OrderBy(c => c.StartTime)
+        .ToList();
+
+        filteredClasses = upcomingClasses;
+    }
+
+    private void ApplyQueryFilters()
+    {
+        filteredClasses = upcomingClasses;
+
+        if (!string.IsNullOrWhiteSpace(TypeQuery) && Enum.TryParse<ClassType>(TypeQuery, true, out var typeVal))
+        {
+            filteredClasses = filteredClasses.Where(c => c.Type == typeVal).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(LevelQuery) && Enum.TryParse<DifficultyLevel>(LevelQuery, true, out var levelVal))
+            filteredClasses = filteredClasses.Where(c => c.Level == levelVal).ToList();
+
+        if (!string.IsNullOrWhiteSpace(DateQuery) && DateTime.TryParse(DateQuery, out var dateVal))
+            filteredClasses = filteredClasses.Where(c => c.StartTime.Date == dateVal.Date).ToList();
+    }
+
+    private void OnTypeFilterChanged(ChangeEventArgs e)
+    {
+
+        var type = e.Value?.ToString();
+                Console.WriteLine($"filter changed {type}");
+        UpdateQueryParameter("type", type);
+    }
+
+    private void OnLevelFilterChanged(ChangeEventArgs e)
+    {
+        var type = e.Value?.ToString();
+        UpdateQueryParameter("level", type);
+    }
+
+    private void OnDateFilterChanged(ChangeEventArgs e)
+    {
+        var type = e.Value?.ToString();
+        UpdateQueryParameter("date", type);
+    }
+
+    private void UpdateQueryParameter(string paramName, string? value)
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            query.Remove(paramName);
+        }
+        else
+        {
+            query[paramName] = value;
+        }
+
+        var newUri = $"/classes{(query.Count > 0 ? "?" + query.ToString() : "")}";
+        Navigation.NavigateTo(newUri);
+    }
+
+    private void ClearFilters()
+    {
+        Navigation.NavigateTo("/classes", forceLoad: false);
+    }
+
+    private async Task OnBookClass(GymClassModel gymClass)
+    {
+        try
+        {
+            var currentUser = await AuthService.GetCurrentUserAsync();
+
+            if (currentUser == null)
+            {
+                message = "User not registered";
+                return;
+            }
+
+            await BookingService.BookClassAsync(currentUser.Id, gymClass.Id);
+            message = $"Successfully booked {gymClass.Name}!";
+            await LoadClasses();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            message = ex.Message;
+        }
+    }
+}

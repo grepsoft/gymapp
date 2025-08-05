@@ -1,0 +1,53 @@
+## Ignore Visual Studio files
+.vs/
+*.vsix
+*.suo
+*.ntvs*
+*.nupkg
+*.user
+
+## Ignore build and debug files
+/bin/
+/obj/
+/debug/
+/release/
+Build/
+Debug/
+Release/
+
+## Ignore NuGet packages
+/packages/
+*.nupkg
+
+## Ignore ASP.NET runtime files
+/runtime/
+wwwroot/lib/
+
+## Ignore Blazor specific files
+obj/
+*.cache
+*.stamp
+
+## Ignore editor settings
+.vscode/
+*.sln.docstates
+
+## Ignore operating system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Ignore common IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+## Ignore common text editor files
+*.orig
+*.bak
+*~
+*.swp
+
+
+node_modules/
